@@ -45,10 +45,10 @@
     --sidebar-border: 240 8% 14%;
     --sidebar-ring: 262 83% 58%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58% / 0.12), hsl(166 72% 50% / 0.06), hsl(340 75% 55% / 0.08));
+    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58% / 0.15), hsl(166 72% 50% / 0.08), hsl(340 75% 55% / 0.1));
     --gradient-card: linear-gradient(145deg, hsl(240 10% 10%), hsl(240 10% 6%));
     --gradient-glow: linear-gradient(135deg, hsl(262 83% 58%), hsl(340 75% 55%));
-    --shadow-glow: 0 0 60px hsl(262 83% 58% / 0.12);
+    --shadow-glow: 0 0 60px hsl(262 83% 58% / 0.15);
     --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.5);
 
     --font-display: 'Space Grotesk', system-ui, sans-serif;
@@ -103,23 +103,55 @@
   .glow-ring {
     box-shadow: 0 0 0 1px hsl(262 83% 58% / 0.3), var(--shadow-glow);
   }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-
-  .animate-stagger {
-    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0;
-  }
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Animated background orbs */
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
 }
 
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.orb {
+  animation: float 8s ease-in-out infinite;
+}
+
+.orb-delayed {
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+.orb-slow {
+  animation: float 12s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+.pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.shimmer-loading {
+  background: linear-gradient(90deg, hsl(var(--secondary)) 25%, hsl(var(--muted)) 50%, hsl(var(--secondary)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-sweep 1.5s infinite;
+}
+
+.gradient-animate {
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease infinite;
 }
