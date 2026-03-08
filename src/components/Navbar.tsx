@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Film } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { searchDramas, Drama } from "@/lib/api";
 
@@ -13,25 +13,18 @@ const Navbar = () => {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    if (searchOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (searchOpen && inputRef.current) inputRef.current.focus();
   }, [searchOpen]);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    if (!query.trim()) { setResults([]); return; }
     clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await searchDramas({ q: query, per_page: 6 });
         setResults(res.data);
-      } catch {
-        setResults([]);
-      }
+      } catch { setResults([]); }
       setLoading(false);
     }, 400);
   }, [query]);
@@ -44,37 +37,41 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-      <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Film className="w-7 h-7 text-primary" />
-          <span className="text-xl font-display font-bold text-gradient">SDrama</span>
+    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <div className="container mx-auto flex items-center justify-between h-14 px-4">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground font-display font-bold text-sm">O</span>
+          </div>
+          <span className="text-lg font-display font-bold tracking-tight text-foreground">
+            OVRSD
+          </span>
         </Link>
 
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+        <div className="flex items-center gap-1">
+          <Link to="/" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50 hidden sm:block">
             Beranda
           </Link>
-          <Link to="/popular" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+          <Link to="/popular" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50 hidden sm:block">
             Populer
           </Link>
 
-          <div className="relative">
+          <div className="relative ml-1">
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-secondary/80 hover:bg-secondary transition-colors"
             >
-              <Search className="w-4 h-4 text-foreground" />
+              {searchOpen ? <X className="w-4 h-4 text-foreground" /> : <Search className="w-4 h-4 text-foreground" />}
             </button>
 
             {searchOpen && (
-              <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-lg shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-80 glass border border-border/50 rounded-xl shadow-2xl overflow-hidden">
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Cari drama..."
-                  className="w-full px-4 py-3 bg-transparent text-foreground text-sm outline-none border-b border-border placeholder:text-muted-foreground"
+                  className="w-full px-4 py-3 bg-transparent text-foreground text-sm outline-none border-b border-border/50 placeholder:text-muted-foreground"
                 />
                 {loading && (
                   <div className="px-4 py-3 text-sm text-muted-foreground">Mencari...</div>
@@ -85,12 +82,12 @@ const Navbar = () => {
                       <button
                         key={d.id}
                         onClick={() => handleSelect(d.id)}
-                        className="w-full flex items-center gap-3 px-4 py-2 hover:bg-secondary transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/50 transition-colors text-left"
                       >
-                        <img src={d.cover_url} alt={d.title} className="w-10 h-14 object-cover rounded" />
-                        <div>
-                          <p className="text-sm text-foreground line-clamp-1">{d.title}</p>
-                          <p className="text-xs text-muted-foreground">{d.provider_name} · {d.chapter_count} Ep</p>
+                        <img src={d.cover_url} alt={d.title} className="w-10 h-14 object-cover rounded-md" />
+                        <div className="min-w-0">
+                          <p className="text-sm text-foreground line-clamp-1 font-medium">{d.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{d.provider_name} · {d.chapter_count} Ep</p>
                         </div>
                       </button>
                     ))}
