@@ -273,7 +273,7 @@ const DramaDetail = () => {
                 transition={{ delay: Math.min(idx * 0.02, 0.5), duration: 0.2 }}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setCurrentEpIndex(idx)}
+                onClick={() => handleWatch(idx)}
                 className={`py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   currentEpIndex === idx
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
