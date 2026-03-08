@@ -1,4 +1,6 @@
 const BASE_URL = "https://api-short.stor.co.id";
+const API_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
+const headers: HeadersInit = { Authorization: `Bearer ${API_KEY}` };
 
 export interface Drama {
   id: number;
@@ -57,7 +59,7 @@ export interface DramaDetail {
 
 async function safeFetch<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -80,7 +82,7 @@ export async function fetchDramas(params?: {
   if (params?.tag) searchParams.set("tag", params.tag);
   if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
   if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
-  const res = await fetch(`${BASE_URL}/api/dramas?${searchParams}`);
+  const res = await fetch(`${BASE_URL}/api/dramas?${searchParams}`, { headers });
   return res.json();
 }
 
@@ -91,7 +93,7 @@ export async function fetchPopularDramas(params?: {
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.per_page) searchParams.set("per_page", String(params.per_page));
-  const res = await fetch(`${BASE_URL}/api/dramas/popular?${searchParams}`);
+  const res = await fetch(`${BASE_URL}/api/dramas/popular?${searchParams}`, { headers });
   return res.json();
 }
 
@@ -129,7 +131,7 @@ export async function fetchDramaFromList(id: number): Promise<Drama | null> {
 }
 
 export async function fetchTags(): Promise<{ data: Tag[] }> {
-  const res = await fetch(`${BASE_URL}/api/tags`);
+  const res = await fetch(`${BASE_URL}/api/tags`, { headers });
   return res.json();
 }
 
@@ -176,6 +178,6 @@ export async function searchDramas(params: {
   if (params.page) searchParams.set("page", String(params.page));
   if (params.per_page) searchParams.set("per_page", String(params.per_page));
   if (params.tag) searchParams.set("tag", params.tag);
-  const res = await fetch(`${BASE_URL}/api/search?${searchParams}`);
+  const res = await fetch(`${BASE_URL}/api/search?${searchParams}`, { headers });
   return res.json();
 }
