@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchPopularDramas, fetchDramas, fetchTags } from "@/lib/api";
+import { fetchPopularDramas, fetchDramas, fetchTags, fetchProviders } from "@/lib/api";
 import DramaCard from "@/components/DramaCard";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
