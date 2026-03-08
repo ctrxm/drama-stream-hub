@@ -25,12 +25,18 @@ const Index = () => {
         sort_by: "updated_at",
         sort_order: "desc",
         tag: activeTag || undefined,
+        provider: activeProvider || undefined,
       }),
   });
 
   const { data: tags } = useQuery({
     queryKey: ["tags"],
     queryFn: fetchTags,
+  });
+
+  const { data: providers } = useQuery({
+    queryKey: ["providers"],
+    queryFn: fetchProviders,
   });
 
   return (
