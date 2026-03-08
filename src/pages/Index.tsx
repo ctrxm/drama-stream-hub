@@ -45,10 +45,10 @@ const Index = () => {
 
       {/* Hero */}
       <section className="pt-16">
-        <div className="relative h-[340px] sm:h-[400px] overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
+        <div className="relative h-[280px] sm:h-[340px] overflow-hidden" style={{ background: "var(--gradient-hero)" }}>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
-          <div className="container mx-auto px-4 relative z-10 flex flex-col justify-end h-full pb-10">
-            <h1 className="text-4xl sm:text-5xl font-display font-bold text-gradient mb-3">
+          <div className="container mx-auto px-4 relative z-10 flex flex-col justify-end h-full pb-8">
+            <h1 className="text-3xl sm:text-5xl font-display font-bold text-gradient mb-2">
               Drama China Terlengkap
             </h1>
             <p className="text-muted-foreground max-w-xl text-sm sm:text-base">
@@ -58,8 +58,74 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Filters: Genre & Provider — above popular */}
+      <section className="container mx-auto px-4 -mt-4 relative z-10 mb-6 space-y-3">
+        {tags?.data && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="w-4 h-4 text-accent" />
+              <h3 className="text-sm font-medium text-muted-foreground">Genre</h3>
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+              <button
+                onClick={() => { setActiveTag(null); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  !activeTag ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                Semua
+              </button>
+              {tags.data.slice(0, 20).map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => { setActiveTag(tag.en_name); setPage(1); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                    activeTag === tag.en_name
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  {tag.en_name} ({tag.drama_count})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {providers?.data && providers.data.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Building2 className="w-4 h-4 text-accent" />
+              <h3 className="text-sm font-medium text-muted-foreground">Provider</h3>
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+              <button
+                onClick={() => { setActiveProvider(null); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  !activeProvider ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                Semua
+              </button>
+              {providers.data.map((prov) => (
+                <button
+                  key={prov.id}
+                  onClick={() => { setActiveProvider(prov.slug); setPage(1); }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                    activeProvider === prov.slug
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  {prov.name} ({prov.drama_count})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Popular */}
-      <section className="container mx-auto px-4 -mt-8 relative z-10">
+      <section className="container mx-auto px-4">
         <div className="flex items-center gap-2 mb-4">
           <Flame className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-display font-semibold text-foreground">Drama Populer</h2>
@@ -75,71 +141,6 @@ const Index = () => {
             : popular?.data.map((drama) => <DramaCard key={drama.id} drama={drama} />)}
         </div>
       </section>
-
-      {/* Tags Filter */}
-      {tags?.data && (
-        <section className="container mx-auto px-4 mt-12">
-          <div className="flex items-center gap-2 mb-3">
-            <Tag className="w-4 h-4 text-accent" />
-            <h3 className="text-sm font-medium text-muted-foreground">Filter Genre</h3>
-          </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-            <button
-              onClick={() => { setActiveTag(null); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                !activeTag ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              }`}
-            >
-              Semua
-            </button>
-            {tags.data.slice(0, 20).map((tag) => (
-              <button
-                key={tag.id}
-                onClick={() => { setActiveTag(tag.en_name); setPage(1); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                  activeTag === tag.en_name
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
-                {tag.en_name} ({tag.drama_count})
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-      {/* Providers */}
-      {providers?.data && providers.data.length > 0 && (
-        <section className="container mx-auto px-4 mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Building2 className="w-4 h-4 text-accent" />
-            <h3 className="text-sm font-medium text-muted-foreground">Provider</h3>
-          </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-            <button
-              onClick={() => { setActiveProvider(null); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                !activeProvider ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              }`}
-            >
-              Semua
-            </button>
-            {providers.data.map((prov) => (
-              <button
-                key={prov.id}
-                onClick={() => { setActiveProvider(prov.slug); setPage(1); }}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                  activeProvider === prov.slug
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
-                {prov.name} ({prov.drama_count})
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Latest */}
       <section className="container mx-auto px-4 mt-8 pb-16">
