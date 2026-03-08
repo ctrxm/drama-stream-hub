@@ -203,10 +203,12 @@ const DramaDetail = () => {
                   transition={{ delay: 0.35 }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => setCurrentEpIndex(0)}
+                  onClick={() => handleWatch(0)}
                   className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                 >
-                  <Play className="w-4 h-4" /> Tonton Sekarang
+                  {!user ? <><Lock className="w-4 h-4" /> Masuk untuk Menonton</> :
+                   !isSubscribed ? <><Crown className="w-4 h-4" /> Berlangganan</> :
+                   <><Play className="w-4 h-4" /> Tonton Sekarang</>}
                 </motion.button>
               )}
             </div>
