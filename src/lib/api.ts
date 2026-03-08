@@ -176,6 +176,6 @@ export async function searchDramas(params: {
   if (params.page) searchParams.set("page", String(params.page));
   if (params.per_page) searchParams.set("per_page", String(params.per_page));
   if (params.tag) searchParams.set("tag", params.tag);
-  const res = await fetch(`${BASE_URL}/api/search?${searchParams}`, { headers });
+  const res = await fetch(`${BASE_URL}/api/search?${searchParams}`);
   return res.json();
 }
