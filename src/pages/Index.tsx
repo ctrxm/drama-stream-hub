@@ -108,6 +108,38 @@ const Index = () => {
           </div>
         </section>
       )}
+      {/* Providers */}
+      {providers?.data && providers.data.length > 0 && (
+        <section className="container mx-auto px-4 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Building2 className="w-4 h-4 text-accent" />
+            <h3 className="text-sm font-medium text-muted-foreground">Provider</h3>
+          </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+            <button
+              onClick={() => { setActiveProvider(null); setPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                !activeProvider ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              Semua
+            </button>
+            {providers.data.map((prov) => (
+              <button
+                key={prov.id}
+                onClick={() => { setActiveProvider(prov.slug); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  activeProvider === prov.slug
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {prov.name} ({prov.drama_count})
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Latest */}
       <section className="container mx-auto px-4 mt-8 pb-16">
