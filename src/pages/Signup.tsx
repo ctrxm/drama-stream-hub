@@ -39,7 +39,7 @@ const Signup = () => {
     if (error) {
       setError(error.message);
     } else {
-      setSuccess(true);
+      navigate("/");
     }
     setLoading(false);
   };
