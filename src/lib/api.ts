@@ -1,4 +1,6 @@
 const BASE_URL = "https://api-short.stor.co.id";
+const API_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
+const headers: HeadersInit = { Authorization: `Bearer ${API_KEY}` };
 
 export interface Drama {
   id: number;
