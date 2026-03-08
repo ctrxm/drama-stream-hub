@@ -210,7 +210,7 @@ const Index = () => {
                         <div className="h-3 w-3/4 rounded shimmer-loading" />
                       </div>
                     ))
-                  : popular?.data.map((drama, i) => <DramaCard key={drama.id} drama={drama} index={i} />)}
+                  : popular?.data?.map((drama, i) => <DramaCard key={drama.id} drama={drama} index={i} />)}
               </div>
             </motion.section>
           )}
