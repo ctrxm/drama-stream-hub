@@ -55,6 +55,16 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
+async function safeFetch<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchDramas(params?: {
   page?: number;
   per_page?: number;
@@ -85,9 +95,37 @@ export async function fetchPopularDramas(params?: {
   return res.json();
 }
 
-export async function fetchDramaDetail(id: number): Promise<{ data: DramaDetail }> {
-  const res = await fetch(`${BASE_URL}/api/dramas/${id}`);
-  return res.json();
+export async function fetchDramaDetail(id: number): Promise<{ data: DramaDetail } | null> {
+  return safeFetch(`${BASE_URL}/api/dramas/${id}`);
+}
+
+export async function fetchDramaEpisodes(id: number, params?: {
+  page?: number;
+  per_page?: number;
+  status?: string;
+}): Promise<PaginatedResponse<Episode[]> | null> {
+  const searchParams = new URLSearchParams();
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.per_page) searchParams.set("per_page", String(params.per_page));
+  if (params?.status) searchParams.set("status", params.status);
+  return safeFetch(`${BASE_URL}/api/dramas/${id}/episodes?${searchParams}`);
+}
+
+// Fallback: find drama from list endpoint by ID
+export async function fetchDramaFromList(id: number): Promise<Drama | null> {
+  // Try searching through recent dramas
+  const res = await safeFetch<PaginatedResponse<Drama[]>>(`${BASE_URL}/api/dramas?per_page=100`);
+  if (res?.data) {
+    const found = res.data.find((d) => d.id === id);
+    if (found) return found;
+  }
+  // Try popular
+  const pop = await safeFetch<PaginatedResponse<Drama[]>>(`${BASE_URL}/api/dramas/popular?per_page=100`);
+  if (pop?.data) {
+    const found = pop.data.find((d) => d.id === id);
+    if (found) return found;
+  }
+  return null;
 }
 
 export async function fetchTags(): Promise<{ data: Tag[] }> {

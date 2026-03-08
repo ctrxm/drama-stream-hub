@@ -12,7 +12,7 @@ const DramaCard = ({ drama }: DramaCardProps) => {
   return (
     <div
       className="group relative cursor-pointer card-hover rounded-lg overflow-hidden bg-card"
-      onClick={() => navigate(`/drama/${drama.id}`)}
+      onClick={() => navigate(`/drama/${drama.id}`, { state: { drama } })}
     >
       <div className="aspect-[3/4] overflow-hidden relative">
         <img
