@@ -4,9 +4,10 @@ import { fetchDramaDetail, fetchDramaEpisodes, fetchDramaFromList, Drama, Episod
 import Navbar from "@/components/Navbar";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Play, Layers, Building2, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowLeft, Play, Layers, Building2, AlertCircle, ChevronDown, Crown, Lock } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 const DramaDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,19 @@ const DramaDetail = () => {
   const [currentEpIndex, setCurrentEpIndex] = useState<number | null>(null);
   const [episodePage, setEpisodePage] = useState(1);
   const [showAllDesc, setShowAllDesc] = useState(false);
+  const { user, isSubscribed } = useAuth();
+
+  const handleWatch = (index: number) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    if (!isSubscribed) {
+      navigate("/subscribe");
+      return;
+    }
+    setCurrentEpIndex(index);
+  };
 
   const passedDrama = (location.state as { drama?: Drama })?.drama;
 
@@ -189,10 +203,12 @@ const DramaDetail = () => {
                   transition={{ delay: 0.35 }}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => setCurrentEpIndex(0)}
+                  onClick={() => handleWatch(0)}
                   className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                 >
-                  <Play className="w-4 h-4" /> Tonton Sekarang
+                  {!user ? <><Lock className="w-4 h-4" /> Masuk untuk Menonton</> :
+                   !isSubscribed ? <><Crown className="w-4 h-4" /> Berlangganan</> :
+                   <><Play className="w-4 h-4" /> Tonton Sekarang</>}
                 </motion.button>
               )}
             </div>
@@ -257,7 +273,7 @@ const DramaDetail = () => {
                 transition={{ delay: Math.min(idx * 0.02, 0.5), duration: 0.2 }}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setCurrentEpIndex(idx)}
+                onClick={() => handleWatch(idx)}
                 className={`py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   currentEpIndex === idx
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
