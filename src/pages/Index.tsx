@@ -17,7 +17,7 @@ const Index = () => {
   });
 
   const { data: latest, isLoading: loadingLatest } = useQuery({
-    queryKey: ["latest-dramas", page, activeTag],
+    queryKey: ["latest-dramas", page, activeTag, activeProvider],
     queryFn: () =>
       fetchDramas({
         page,
