@@ -4,9 +4,10 @@ import { fetchDramaDetail, fetchDramaEpisodes, fetchDramaFromList, Drama, Episod
 import Navbar from "@/components/Navbar";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Play, Layers, Building2, AlertCircle, ChevronDown } from "lucide-react";
+import { ArrowLeft, Play, Layers, Building2, AlertCircle, ChevronDown, Crown, Lock } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 const DramaDetail = () => {
   const { id } = useParams<{ id: string }>();
