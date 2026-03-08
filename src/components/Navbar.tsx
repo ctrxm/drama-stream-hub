@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { searchDramas, Drama } from "@/lib/api";
+import logoImg from "@/assets/logo.png";
 
 const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -39,10 +40,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
       <div className="container mx-auto flex items-center justify-between h-14 px-4">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-display font-bold text-sm">O</span>
-          </div>
+        <Link to="/" className="flex items-center gap-2 group">
+          <img src={logoImg} alt="OVRSD" className="w-8 h-8 object-contain" />
           <span className="text-lg font-display font-bold tracking-tight text-foreground">
             OVRSD
           </span>
@@ -51,9 +50,6 @@ const Navbar = () => {
         <div className="flex items-center gap-1">
           <Link to="/" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50 hidden sm:block">
             Beranda
-          </Link>
-          <Link to="/popular" className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary/50 hidden sm:block">
-            Populer
           </Link>
 
           <div className="relative ml-1">
