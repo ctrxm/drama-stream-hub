@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchPopularDramas, fetchDramas, fetchTags } from "@/lib/api";
+import { fetchPopularDramas, fetchDramas, fetchTags, fetchProviders } from "@/lib/api";
 import DramaCard from "@/components/DramaCard";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, Flame, Sparkles, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Building2 } from "lucide-react";
 
 const Index = () => {
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeProvider, setActiveProvider] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data: popular, isLoading: loadingPopular } = useQuery({
@@ -24,12 +25,18 @@ const Index = () => {
         sort_by: "updated_at",
         sort_order: "desc",
         tag: activeTag || undefined,
+        provider: activeProvider || undefined,
       }),
   });
 
   const { data: tags } = useQuery({
     queryKey: ["tags"],
     queryFn: fetchTags,
+  });
+
+  const { data: providers } = useQuery({
+    queryKey: ["providers"],
+    queryFn: fetchProviders,
   });
 
   return (
@@ -96,6 +103,38 @@ const Index = () => {
                 }`}
               >
                 {tag.en_name} ({tag.drama_count})
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+      {/* Providers */}
+      {providers?.data && providers.data.length > 0 && (
+        <section className="container mx-auto px-4 mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Building2 className="w-4 h-4 text-accent" />
+            <h3 className="text-sm font-medium text-muted-foreground">Provider</h3>
+          </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+            <button
+              onClick={() => { setActiveProvider(null); setPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                !activeProvider ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              }`}
+            >
+              Semua
+            </button>
+            {providers.data.map((prov) => (
+              <button
+                key={prov.id}
+                onClick={() => { setActiveProvider(prov.slug); setPage(1); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  activeProvider === prov.slug
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {prov.name} ({prov.drama_count})
               </button>
             ))}
           </div>

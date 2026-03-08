@@ -133,6 +133,38 @@ export async function fetchTags(): Promise<{ data: Tag[] }> {
   return res.json();
 }
 
+export interface Provider {
+  id: number;
+  name: string;
+  slug: string;
+  drama_count: number;
+  logo_url?: string;
+}
+
+export async function fetchProviders(): Promise<{ data: Provider[] }> {
+  const res = await safeFetch<{ data: Provider[] }>(`${BASE_URL}/api/providers`);
+  if (res) return res;
+  // Fallback: extract unique providers from dramas list
+  const dramas = await safeFetch<PaginatedResponse<Drama[]>>(`${BASE_URL}/api/dramas?per_page=100`);
+  if (dramas?.data) {
+    const map = new Map<string, Provider>();
+    dramas.data.forEach((d) => {
+      if (!map.has(d.provider_slug)) {
+        map.set(d.provider_slug, {
+          id: d.provider_id,
+          name: d.provider_name,
+          slug: d.provider_slug,
+          drama_count: 0,
+        });
+      }
+      const p = map.get(d.provider_slug)!;
+      p.drama_count++;
+    });
+    return { data: Array.from(map.values()) };
+  }
+  return { data: [] };
+}
+
 export async function searchDramas(params: {
   q: string;
   page?: number;
