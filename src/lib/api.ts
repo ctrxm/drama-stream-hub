@@ -131,7 +131,7 @@ export async function fetchDramaFromList(id: number): Promise<Drama | null> {
 }
 
 export async function fetchTags(): Promise<{ data: Tag[] }> {
-  const res = await fetch(`${BASE_URL}/api/tags`);
+  const res = await fetch(`${BASE_URL}/api/tags`, { headers });
   return res.json();
 }
 
