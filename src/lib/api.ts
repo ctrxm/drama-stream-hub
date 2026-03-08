@@ -82,7 +82,7 @@ export async function fetchDramas(params?: {
   if (params?.tag) searchParams.set("tag", params.tag);
   if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
   if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
-  const res = await fetch(`${BASE_URL}/api/dramas?${searchParams}`);
+  const res = await fetch(`${BASE_URL}/api/dramas?${searchParams}`, { headers });
   return res.json();
 }
 
