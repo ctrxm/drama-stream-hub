@@ -4,10 +4,11 @@ import DramaCard from "@/components/DramaCard";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, Flame, Sparkles, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame, Sparkles, Tag, Building2 } from "lucide-react";
 
 const Index = () => {
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeProvider, setActiveProvider] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data: popular, isLoading: loadingPopular } = useQuery({
