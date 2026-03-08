@@ -59,7 +59,7 @@ export interface DramaDetail {
 
 async function safeFetch<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers });
     if (!res.ok) return null;
     return res.json();
   } catch {
