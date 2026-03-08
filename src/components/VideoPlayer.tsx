@@ -24,17 +24,15 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
   const touchStartY = useRef(0);
 
   const episode = episodes[currentIndex];
-  if (!episode) return null;
-
-  const qualities = episode.qualities || {};
+  const qualities = episode?.qualities || {};
   const qualityKeys = Object.keys(qualities);
-  const subtitles = episode.subtitles || [];
+  const subtitles = episode?.subtitles || [];
 
   const videoSrc = selectedQuality && qualities[selectedQuality]
     ? qualities[selectedQuality]
     : qualityKeys.length > 0
       ? qualities[qualityKeys[0]]
-      : episode.video_url;
+      : episode?.video_url || "";
 
   useEffect(() => {
     if (qualityKeys.length > 0 && !selectedQuality) {
@@ -43,20 +41,18 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
   }, [qualityKeys, selectedQuality]);
 
   useEffect(() => {
-    if (videoRef.current) {
+    if (videoRef.current && episode) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {});
       setIsPlaying(true);
     }
-  }, [videoSrc, episode.id]);
+  }, [videoSrc, episode?.id]);
 
-  // Lock body scroll when player is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  // Auto-hide controls
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     clearTimeout(controlsTimeout.current);
@@ -67,6 +63,8 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
     resetControlsTimer();
     return () => clearTimeout(controlsTimeout.current);
   }, [resetControlsTimer]);
+
+  if (!episode) return null;
 
   const handleVideoEnd = () => {
     if (currentIndex < episodes.length - 1) {
@@ -105,7 +103,6 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
     setIsMuted(videoRef.current.muted);
   };
 
-  // Swipe gestures for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
@@ -188,7 +185,7 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
             )}
           </div>
 
-          {/* Right side nav buttons */}
+          {/* Right side nav */}
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-4">
             <button
               onClick={goPrev}
@@ -208,7 +205,6 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
 
           {/* Bottom bar */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pb-[env(safe-area-inset-bottom,16px)]">
-            {/* Progress bar */}
             <div className="w-full h-1.5 bg-muted/40 rounded-full mb-3 cursor-pointer" onClick={handleProgressClick}>
               <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
             </div>
@@ -238,7 +234,7 @@ const VideoPlayer = ({ episodes, currentIndex, dramaTitle, onClose, onEpisodeCha
           </div>
         </div>
 
-        {/* Quality picker popup */}
+        {/* Quality picker */}
         {showSettings && (
           <div className="absolute bottom-24 right-4 bg-card border border-border rounded-lg p-3 min-w-[140px] shadow-lg z-10">
             <p className="text-xs text-muted-foreground mb-2">Kualitas</p>
