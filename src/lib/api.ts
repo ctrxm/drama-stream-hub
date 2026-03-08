@@ -96,7 +96,7 @@ export async function fetchPopularDramas(params?: {
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.per_page) searchParams.set("per_page", String(params.per_page));
-  const res = await fetch(`${BASE_URL}/api/dramas/popular?${searchParams}`);
+  const res = await fetch(`${BASE_URL}/api/dramas/popular?${searchParams}`, { headers });
   return res.json();
 }
 
