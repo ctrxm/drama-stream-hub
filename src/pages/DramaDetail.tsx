@@ -1,26 +1,51 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDramaDetail, Episode } from "@/lib/api";
+import { fetchDramaDetail, fetchDramaEpisodes, fetchDramaFromList, Drama, Episode } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Play, Clock, Layers } from "lucide-react";
+import { ArrowLeft, Play, Clock, Layers, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 const DramaDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
+  const [episodePage, setEpisodePage] = useState(1);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["drama", id],
+  // Drama passed via navigation state from the card
+  const passedDrama = (location.state as { drama?: Drama })?.drama;
+
+  // Try detail endpoint
+  const { data: detailData, isLoading: loadingDetail } = useQuery({
+    queryKey: ["drama-detail", id],
     queryFn: () => fetchDramaDetail(Number(id)),
     enabled: !!id,
   });
 
-  const drama = data?.data?.drama;
-  const tags = data?.data?.tags || [];
-  const episodes = (data?.data?.episodes || []).filter((e) => e.status === "published");
+  // Try episodes endpoint separately
+  const { data: episodesData, isLoading: loadingEpisodes } = useQuery({
+    queryKey: ["drama-episodes", id, episodePage],
+    queryFn: () => fetchDramaEpisodes(Number(id), { page: episodePage, per_page: 100, status: "published" }),
+    enabled: !!id,
+  });
+
+  // Fallback: fetch from list if detail fails and no passed drama
+  const { data: fallbackDrama, isLoading: loadingFallback } = useQuery({
+    queryKey: ["drama-fallback", id],
+    queryFn: () => fetchDramaFromList(Number(id)),
+    enabled: !!id && !detailData && !passedDrama && !loadingDetail,
+  });
+
+  // Resolve drama data from best available source
+  const drama: Drama | undefined = detailData?.data?.drama || passedDrama || fallbackDrama || undefined;
+  const tags = detailData?.data?.tags || [];
+  const detailEpisodes = detailData?.data?.episodes?.filter((e) => e.status === "published") || [];
+  const separateEpisodes = episodesData?.data || [];
+  const episodes = detailEpisodes.length > 0 ? detailEpisodes : separateEpisodes;
+
+  const isLoading = loadingDetail && !passedDrama && loadingFallback;
 
   const handlePlayEpisode = (episode: Episode) => {
     setSelectedEpisode(episode);
@@ -40,8 +65,18 @@ const DramaDetail = () => {
 
   if (!drama) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Drama tidak ditemukan</p>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 flex flex-col items-center justify-center gap-4 px-4">
+          <AlertCircle className="w-12 h-12 text-muted-foreground" />
+          <p className="text-muted-foreground text-center">Drama tidak ditemukan atau server sedang bermasalah.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
+          >
+            Kembali ke Beranda
+          </button>
+        </div>
       </div>
     );
   }
@@ -92,7 +127,7 @@ const DramaDetail = () => {
                       key={tag.id}
                       className="px-2.5 py-1 bg-secondary text-secondary-foreground text-xs rounded-full"
                     >
-                      {tag.en_name}
+                      {tag.en_name || tag.name}
                     </span>
                   ))}
                 </div>
@@ -112,27 +147,45 @@ const DramaDetail = () => {
             </div>
           </div>
 
-          {/* Episodes List */}
-          <div className="mt-10">
-            <h2 className="text-lg font-display font-semibold text-foreground mb-4">
-              Daftar Episode ({episodes.length})
-            </h2>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-              {episodes.map((ep) => (
-                <button
-                  key={ep.id}
-                  onClick={() => handlePlayEpisode(ep)}
-                  className={`py-2 px-1 rounded-md text-sm font-medium transition-colors ${
-                    selectedEpisode?.id === ep.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  {ep.episode_index}
-                </button>
-              ))}
+          {/* Episodes */}
+          {episodes.length > 0 ? (
+            <div className="mt-10">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4">
+                Daftar Episode ({episodes.length})
+              </h2>
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {episodes.map((ep) => (
+                  <button
+                    key={ep.id}
+                    onClick={() => handlePlayEpisode(ep)}
+                    className={`py-2 px-1 rounded-md text-sm font-medium transition-colors ${
+                      selectedEpisode?.id === ep.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    }`}
+                  >
+                    {ep.episode_index}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : !loadingEpisodes ? (
+            <div className="mt-10 p-6 rounded-lg bg-muted/50 text-center">
+              <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Episode belum tersedia saat ini. Server mungkin sedang dalam perbaikan.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-10">
+              <Skeleton className="h-8 w-48 mb-4" />
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 rounded-md" />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
