@@ -16,6 +16,19 @@ const DramaDetail = () => {
   const [currentEpIndex, setCurrentEpIndex] = useState<number | null>(null);
   const [episodePage, setEpisodePage] = useState(1);
   const [showAllDesc, setShowAllDesc] = useState(false);
+  const { user, isSubscribed } = useAuth();
+
+  const handleWatch = (index: number) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    if (!isSubscribed) {
+      navigate("/subscribe");
+      return;
+    }
+    setCurrentEpIndex(index);
+  };
 
   const passedDrama = (location.state as { drama?: Drama })?.drama;
 
