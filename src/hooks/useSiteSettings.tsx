@@ -1,12 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ApiKeyEntry {
+  key: string;
+  label: string;
+  active: boolean;
+}
+
 export interface SiteSettings {
   maintenance_mode: { enabled: boolean; message: string };
   subscription_price: { amount: number; currency: string; duration_days: number };
   rate_limit: { requests_per_minute: number };
   site_info: { name: string; description: string; announcement: string };
   registration: { enabled: boolean; gmail_only: boolean };
+  api_keys: { keys: ApiKeyEntry[]; rotation_mode: "round_robin" | "fallback" };
 }
 
 type SettingKey = keyof SiteSettings;
