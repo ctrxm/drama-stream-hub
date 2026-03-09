@@ -1,6 +1,56 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const BASE_URL = "https://api-short.stor.co.id";
-const API_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
-const headers: HeadersInit = { Authorization: `Bearer ${API_KEY}` };
+
+// ─── API Key Management ───
+interface ApiKeyConfig {
+  keys: { key: string; label: string; active: boolean }[];
+  rotation_mode: "round_robin" | "fallback";
+}
+
+let apiKeyConfig: ApiKeyConfig | null = null;
+let apiKeyIndex = 0;
+let apiKeyLastFetch = 0;
+const API_KEY_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+
+// Fallback key if DB is unavailable
+const FALLBACK_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
+
+async function loadApiKeys(): Promise<void> {
+  if (apiKeyConfig && Date.now() - apiKeyLastFetch < API_KEY_REFRESH_INTERVAL) return;
+  try {
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "api_keys")
+      .single();
+    if (data?.value) {
+      apiKeyConfig = data.value as unknown as ApiKeyConfig;
+      apiKeyLastFetch = Date.now();
+    }
+  } catch {
+    // Use fallback
+  }
+}
+
+function getNextApiKey(): string {
+  if (!apiKeyConfig || apiKeyConfig.keys.length === 0) return FALLBACK_KEY;
+  const activeKeys = apiKeyConfig.keys.filter((k) => k.active);
+  if (activeKeys.length === 0) return FALLBACK_KEY;
+
+  if (apiKeyConfig.rotation_mode === "round_robin") {
+    const key = activeKeys[apiKeyIndex % activeKeys.length];
+    apiKeyIndex = (apiKeyIndex + 1) % activeKeys.length;
+    return key.key;
+  }
+  // fallback mode: try first active key
+  return activeKeys[0].key;
+}
+
+async function getHeaders(): Promise<HeadersInit> {
+  await loadApiKeys();
+  return { Authorization: `Bearer ${getNextApiKey()}` };
+}
 
 // ─── In-memory cache ───
 interface CacheEntry<T> {
@@ -9,15 +59,13 @@ interface CacheEntry<T> {
 }
 
 const cache = new Map<string, CacheEntry<unknown>>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const CACHE_TTL_TAGS = 30 * 60 * 1000; // 30 min for static data
+const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL_TAGS = 30 * 60 * 1000;
 const CACHE_TTL_PROVIDERS = 30 * 60 * 1000;
 
 function getCached<T>(key: string, ttl: number): T | null {
   const entry = cache.get(key);
-  if (entry && Date.now() - entry.timestamp < ttl) {
-    return entry.data as T;
-  }
+  if (entry && Date.now() - entry.timestamp < ttl) return entry.data as T;
   if (entry) cache.delete(key);
   return null;
 }
@@ -28,21 +76,18 @@ function setCache<T>(key: string, data: T): void {
 
 // ─── Rate limiter ───
 const requestTimestamps: number[] = [];
-const RATE_LIMIT = 50; // stay under 60/min
+const RATE_LIMIT = 50;
 const RATE_WINDOW = 60_000;
 
 async function rateLimitedFetch(url: string, init?: RequestInit): Promise<Response> {
   const now = Date.now();
-  // Remove old timestamps
   while (requestTimestamps.length > 0 && now - requestTimestamps[0] > RATE_WINDOW) {
     requestTimestamps.shift();
   }
-  
   if (requestTimestamps.length >= RATE_LIMIT) {
     const waitTime = RATE_WINDOW - (now - requestTimestamps[0]) + 100;
     await new Promise((r) => setTimeout(r, waitTime));
   }
-  
   requestTimestamps.push(Date.now());
   return fetch(url, init);
 }
@@ -105,6 +150,7 @@ export interface DramaDetail {
 
 async function safeFetch<T>(url: string): Promise<T | null> {
   try {
+    const headers = await getHeaders();
     const res = await rateLimitedFetch(url, { headers });
     if (!res.ok) return null;
     return res.json();
@@ -133,6 +179,7 @@ export async function fetchDramas(params?: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
+  const headers = await getHeaders();
   const res = await rateLimitedFetch(`${BASE_URL}/api/dramas?${searchParams}`, { headers });
   const data = await res.json();
   setCache(cacheKey, data);
@@ -151,6 +198,7 @@ export async function fetchPopularDramas(params?: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
+  const headers = await getHeaders();
   const res = await rateLimitedFetch(`${BASE_URL}/api/dramas/popular?${searchParams}`, { headers });
   const data = await res.json();
   setCache(cacheKey, data);
@@ -209,6 +257,7 @@ export async function fetchTags(): Promise<{ data: Tag[] }> {
   const cached = getCached<{ data: Tag[] }>(cacheKey, CACHE_TTL_TAGS);
   if (cached) return cached;
 
+  const headers = await getHeaders();
   const res = await rateLimitedFetch(`${BASE_URL}/api/tags`, { headers });
   const data = await res.json();
   setCache(cacheKey, data);
@@ -263,6 +312,7 @@ export async function searchDramas(params: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
+  const headers = await getHeaders();
   const res = await rateLimitedFetch(`${BASE_URL}/api/search?${searchParams}`, { headers });
   const data = await res.json();
   setCache(cacheKey, data);

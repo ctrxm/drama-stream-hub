@@ -9,6 +9,7 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminSubscriptions from "@/components/admin/AdminSubscriptions";
 import AdminSettings from "@/components/admin/AdminSettings";
+import AdminApiKeys from "@/components/admin/AdminApiKeys";
 
 interface Stats {
   total_users: number;
@@ -32,6 +33,7 @@ const tabs = [
   { key: "users", label: "Users" },
   { key: "subscriptions", label: "Subs" },
   { key: "settings", label: "Settings" },
+  { key: "apikeys", label: "API Keys" },
 ] as const;
 
 type TabKey = typeof tabs[number]["key"];
@@ -109,6 +111,7 @@ const Admin = () => {
         {activeTab === "users" && <AdminUsers users={users} loading={loadingData} />}
         {activeTab === "subscriptions" && <AdminSubscriptions subs={subs} loading={loadingData} />}
         {activeTab === "settings" && <AdminSettings />}
+        {activeTab === "apikeys" && <AdminApiKeys />}
       </div>
     </div>
   );
