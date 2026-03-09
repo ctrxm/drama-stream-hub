@@ -247,7 +247,7 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-
+export async function fetchDramas(params?: {
   page?: number;
   per_page?: number;
   provider?: string;
