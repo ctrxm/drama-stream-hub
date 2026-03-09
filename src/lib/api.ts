@@ -22,6 +22,7 @@ export interface ApiKeyStats {
 let apiKeyConfig: ApiKeyConfig | null = null;
 let apiKeyIndex = 0;
 let apiKeyLastFetch = 0;
+let lastWorkingKey: string | null = null;
 const API_KEY_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 const FALLBACK_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
