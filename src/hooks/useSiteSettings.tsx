@@ -38,11 +38,14 @@ export function useUpdateSetting() {
 
   return useMutation({
     mutationFn: async ({ key, value }: { key: SettingKey; value: unknown }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Anda harus login terlebih dahulu");
+      
       const { error } = await supabase
         .from("site_settings")
-        .update({ value: value as any, updated_at: new Date().toISOString() })
+        .update({ value: value as any, updated_at: new Date().toISOString(), updated_by: user.id })
         .eq("key", key);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["site_settings"] }),
   });
