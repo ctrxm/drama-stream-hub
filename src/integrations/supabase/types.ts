@@ -177,6 +177,10 @@ export type Database = {
           total_users: number
         }[]
       }
+      admin_grant_subscription: {
+        Args: { _days?: number; _user_id: string }
+        Returns: undefined
+      }
       has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
