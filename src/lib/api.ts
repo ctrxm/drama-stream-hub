@@ -191,7 +191,63 @@ async function safeFetch<T>(url: string): Promise<T | null> {
   }
 }
 
-export async function fetchDramas(params?: {
+// ─── Types ───
+export interface Drama {
+  id: number;
+  provider_id: number;
+  external_id: string;
+  title: string;
+  cover_url: string;
+  introduction: string;
+  chapter_count: number;
+  play_count: number;
+  shelf_time: string;
+  is_dubbed: boolean;
+  created_at: string;
+  updated_at: string;
+  provider_slug: string;
+  provider_name: string;
+}
+
+export interface Episode {
+  id: number;
+  drama_id: number;
+  external_id: string;
+  episode_index: number;
+  episode_name: string;
+  video_url: string;
+  subtitle_url: string;
+  subtitles: { lang: string; url: string }[];
+  qualities: Record<string, string>;
+  status: string;
+  released_at: string;
+  created_at: string;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  en_name: string;
+  drama_count: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T;
+  meta: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export interface DramaDetail {
+  drama: Drama;
+  tags: Tag[];
+  episodes: Episode[];
+}
+
+
   page?: number;
   per_page?: number;
   provider?: string;
