@@ -287,8 +287,7 @@ export async function fetchTags(): Promise<{ data: Tag[] }> {
   const cached = getCached<{ data: Tag[] }>(cacheKey, CACHE_TTL_TAGS);
   if (cached) return cached;
 
-  const headers = await getHeaders();
-  const res = await rateLimitedFetch(`${BASE_URL}/api/tags`, { headers });
+  const res = await fetchWithFailover(`${BASE_URL}/api/tags`);
   const data = await res.json();
   setCache(cacheKey, data);
   return data;
