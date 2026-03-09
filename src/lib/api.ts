@@ -8,13 +8,56 @@ interface ApiKeyConfig {
   rotation_mode: "round_robin" | "fallback";
 }
 
+export interface ApiKeyStats {
+  key: string;
+  label: string;
+  active: boolean;
+  requests: number;
+  errors: number;
+  lastUsed: number | null;
+  lastError: string | null;
+  disabled: boolean; // auto-disabled by failover
+}
+
 let apiKeyConfig: ApiKeyConfig | null = null;
 let apiKeyIndex = 0;
 let apiKeyLastFetch = 0;
-const API_KEY_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+const API_KEY_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-// Fallback key if DB is unavailable
 const FALLBACK_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
+
+// Per-key stats tracking (in-memory, resets on reload)
+const keyStats = new Map<string, ApiKeyStats>();
+
+export function getApiKeyStats(): ApiKeyStats[] {
+  return Array.from(keyStats.values());
+}
+
+function ensureStats(key: string, label: string, active: boolean): ApiKeyStats {
+  if (!keyStats.has(key)) {
+    keyStats.set(key, { key, label, active, requests: 0, errors: 0, lastUsed: null, lastError: null, disabled: false });
+  }
+  const s = keyStats.get(key)!;
+  s.label = label;
+  s.active = active;
+  return s;
+}
+
+function recordRequest(key: string) {
+  const s = keyStats.get(key);
+  if (s) { s.requests++; s.lastUsed = Date.now(); }
+}
+
+function recordError(key: string, status: number) {
+  const s = keyStats.get(key);
+  if (s) {
+    s.errors++;
+    s.lastError = `HTTP ${status} at ${new Date().toLocaleTimeString()}`;
+    if (status === 401 || status === 403) {
+      s.disabled = true;
+    }
+  }
+}
 
 async function loadApiKeys(): Promise<void> {
   if (apiKeyConfig && Date.now() - apiKeyLastFetch < API_KEY_REFRESH_INTERVAL) return;
@@ -27,29 +70,42 @@ async function loadApiKeys(): Promise<void> {
     if (data?.value) {
       apiKeyConfig = data.value as unknown as ApiKeyConfig;
       apiKeyLastFetch = Date.now();
+      // Init stats for all keys
+      for (const k of apiKeyConfig.keys) {
+        ensureStats(k.key, k.label, k.active);
+      }
     }
   } catch {
     // Use fallback
   }
 }
 
-function getNextApiKey(): string {
-  if (!apiKeyConfig || apiKeyConfig.keys.length === 0) return FALLBACK_KEY;
-  const activeKeys = apiKeyConfig.keys.filter((k) => k.active);
-  if (activeKeys.length === 0) return FALLBACK_KEY;
-
-  if (apiKeyConfig.rotation_mode === "round_robin") {
-    const key = activeKeys[apiKeyIndex % activeKeys.length];
-    apiKeyIndex = (apiKeyIndex + 1) % activeKeys.length;
-    return key.key;
+function getAvailableKeys(): { key: string; label: string }[] {
+  if (!apiKeyConfig || apiKeyConfig.keys.length === 0) return [{ key: FALLBACK_KEY, label: "Fallback" }];
+  const available = apiKeyConfig.keys.filter((k) => {
+    const stats = keyStats.get(k.key);
+    return k.active && !(stats?.disabled);
+  });
+  if (available.length === 0) {
+    // All disabled? Re-enable all and try again
+    for (const k of apiKeyConfig.keys.filter((k) => k.active)) {
+      const s = keyStats.get(k.key);
+      if (s) s.disabled = false;
+    }
+    const retry = apiKeyConfig.keys.filter((k) => k.active);
+    return retry.length > 0 ? retry : [{ key: FALLBACK_KEY, label: "Fallback" }];
   }
-  // fallback mode: try first active key
-  return activeKeys[0].key;
+  return available;
 }
 
-async function getHeaders(): Promise<HeadersInit> {
-  await loadApiKeys();
-  return { Authorization: `Bearer ${getNextApiKey()}` };
+function getNextApiKey(): string {
+  const available = getAvailableKeys();
+  if (apiKeyConfig?.rotation_mode === "round_robin") {
+    const entry = available[apiKeyIndex % available.length];
+    apiKeyIndex = (apiKeyIndex + 1) % available.length;
+    return entry.key;
+  }
+  return available[0].key;
 }
 
 // ─── In-memory cache ───
@@ -90,6 +146,49 @@ async function rateLimitedFetch(url: string, init?: RequestInit): Promise<Respon
   }
   requestTimestamps.push(Date.now());
   return fetch(url, init);
+}
+
+// ─── Fetch with failover ───
+async function fetchWithFailover(url: string): Promise<Response> {
+  await loadApiKeys();
+  const available = getAvailableKeys();
+  const maxAttempts = Math.min(available.length, 3);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const apiKey = getNextApiKey();
+    recordRequest(apiKey);
+    try {
+      const res = await rateLimitedFetch(url, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        recordError(apiKey, res.status);
+        console.warn(`API key ${keyStats.get(apiKey)?.label || 'unknown'} failed with ${res.status}, switching...`);
+        continue;
+      }
+      if (!res.ok) {
+        recordError(apiKey, res.status);
+      }
+      return res;
+    } catch (err) {
+      recordError(apiKey, 0);
+      if (attempt === maxAttempts - 1) throw err;
+    }
+  }
+  // Should not reach here, but fallback
+  return rateLimitedFetch(url, {
+    headers: { Authorization: `Bearer ${FALLBACK_KEY}` },
+  });
+}
+
+async function safeFetch<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetchWithFailover(url);
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 // ─── Types ───
@@ -148,17 +247,6 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-async function safeFetch<T>(url: string): Promise<T | null> {
-  try {
-    const headers = await getHeaders();
-    const res = await rateLimitedFetch(url, { headers });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
-
 export async function fetchDramas(params?: {
   page?: number;
   per_page?: number;
@@ -179,8 +267,7 @@ export async function fetchDramas(params?: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
-  const headers = await getHeaders();
-  const res = await rateLimitedFetch(`${BASE_URL}/api/dramas?${searchParams}`, { headers });
+  const res = await fetchWithFailover(`${BASE_URL}/api/dramas?${searchParams}`);
   const data = await res.json();
   setCache(cacheKey, data);
   return data;
@@ -198,8 +285,7 @@ export async function fetchPopularDramas(params?: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
-  const headers = await getHeaders();
-  const res = await rateLimitedFetch(`${BASE_URL}/api/dramas/popular?${searchParams}`, { headers });
+  const res = await fetchWithFailover(`${BASE_URL}/api/dramas/popular?${searchParams}`);
   const data = await res.json();
   setCache(cacheKey, data);
   return data;
@@ -257,8 +343,7 @@ export async function fetchTags(): Promise<{ data: Tag[] }> {
   const cached = getCached<{ data: Tag[] }>(cacheKey, CACHE_TTL_TAGS);
   if (cached) return cached;
 
-  const headers = await getHeaders();
-  const res = await rateLimitedFetch(`${BASE_URL}/api/tags`, { headers });
+  const res = await fetchWithFailover(`${BASE_URL}/api/tags`);
   const data = await res.json();
   setCache(cacheKey, data);
   return data;
@@ -312,8 +397,7 @@ export async function searchDramas(params: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
-  const headers = await getHeaders();
-  const res = await rateLimitedFetch(`${BASE_URL}/api/search?${searchParams}`, { headers });
+  const res = await fetchWithFailover(`${BASE_URL}/api/search?${searchParams}`);
   const data = await res.json();
   setCache(cacheKey, data);
   return data;

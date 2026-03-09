@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Key, Plus, Trash2, RotateCcw, Eye, EyeOff, Save, Loader2, Shield } from "lucide-react";
+import { Key, Plus, Trash2, RotateCcw, Eye, EyeOff, Save, Loader2, Shield, BarChart3, AlertTriangle, Clock } from "lucide-react";
 import { useSiteSettings, useUpdateSetting, ApiKeyEntry } from "@/hooks/useSiteSettings";
+import { getApiKeyStats, ApiKeyStats } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function AdminApiKeys() {
@@ -14,6 +15,7 @@ export default function AdminApiKeys() {
   const [newLabel, setNewLabel] = useState("");
   const [showKeys, setShowKeys] = useState<Set<number>>(new Set());
   const [dirty, setDirty] = useState(false);
+  const [stats, setStats] = useState<ApiKeyStats[]>([]);
 
   useEffect(() => {
     if (!settings?.api_keys) return;
@@ -21,10 +23,20 @@ export default function AdminApiKeys() {
     setRotationMode(settings.api_keys.rotation_mode || "round_robin");
   }, [settings]);
 
+  // Refresh stats every 3 seconds
+  useEffect(() => {
+    const update = () => setStats(getApiKeyStats());
+    update();
+    const interval = setInterval(update, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const maskKey = (key: string) => {
     if (key.length <= 12) return "••••••••";
     return key.slice(0, 8) + "••••••••" + key.slice(-4);
   };
+
+  const getStatsForKey = (key: string): ApiKeyStats | undefined => stats.find((s) => s.key === key);
 
   const addKey = () => {
     if (!newKey.trim()) { toast.error("API Key tidak boleh kosong"); return; }
@@ -116,50 +128,119 @@ export default function AdminApiKeys() {
         </p>
       </div>
 
+      {/* Usage Stats Summary */}
+      {stats.length > 0 && (
+        <div className="glass rounded-xl border border-border/30 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Statistik Penggunaan (Sesi Ini)</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center p-2 rounded-lg bg-secondary/30">
+              <p className="text-lg font-bold text-foreground">{stats.reduce((a, s) => a + s.requests, 0)}</p>
+              <p className="text-[10px] text-muted-foreground">Total Request</p>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-secondary/30">
+              <p className="text-lg font-bold text-foreground">{stats.reduce((a, s) => a + s.errors, 0)}</p>
+              <p className="text-[10px] text-muted-foreground">Total Error</p>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-secondary/30">
+              <p className="text-lg font-bold text-foreground">
+                {stats.reduce((a, s) => a + s.requests, 0) > 0
+                  ? ((stats.reduce((a, s) => a + s.errors, 0) / stats.reduce((a, s) => a + s.requests, 0)) * 100).toFixed(1)
+                  : "0"}%
+              </p>
+              <p className="text-[10px] text-muted-foreground">Error Rate</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Key List */}
       <div className="space-y-2">
-        {keys.map((keyEntry, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className={`glass rounded-xl border p-3 ${
-              keyEntry.active ? "border-primary/30" : "border-border/20 opacity-60"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Shield className={`w-3.5 h-3.5 ${keyEntry.active ? "text-green-400" : "text-muted-foreground"}`} />
-                <span className="text-xs font-medium text-foreground">{keyEntry.label}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  keyEntry.active ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"
-                }`}>
-                  {keyEntry.active ? "Aktif" : "Nonaktif"}
-                </span>
+        {keys.map((keyEntry, index) => {
+          const keyStat = getStatsForKey(keyEntry.key);
+          const errorRate = keyStat && keyStat.requests > 0
+            ? ((keyStat.errors / keyStat.requests) * 100).toFixed(1)
+            : "0";
+
+          return (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className={`glass rounded-xl border p-3 ${
+                keyStat?.disabled
+                  ? "border-destructive/40 bg-destructive/5"
+                  : keyEntry.active ? "border-primary/30" : "border-border/20 opacity-60"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Shield className={`w-3.5 h-3.5 ${
+                    keyStat?.disabled ? "text-destructive" : keyEntry.active ? "text-green-400" : "text-muted-foreground"
+                  }`} />
+                  <span className="text-xs font-medium text-foreground">{keyEntry.label}</span>
+                  {keyStat?.disabled ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5" /> Auto-disabled
+                    </span>
+                  ) : (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      keyEntry.active ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"
+                    }`}>
+                      {keyEntry.active ? "Aktif" : "Nonaktif"}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => toggleShowKey(index)} className="p-1.5 rounded-lg hover:bg-secondary/50 transition-colors">
+                    {showKeys.has(index)
+                      ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
+                      : <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                    }
+                  </button>
+                  <button onClick={() => toggleKey(index)} className="p-1.5 rounded-lg hover:bg-secondary/50 transition-colors">
+                    <div className={`w-8 h-4 rounded-full transition-colors ${keyEntry.active ? "bg-primary" : "bg-muted"}`}>
+                      <div className={`w-3 h-3 rounded-full bg-foreground transition-transform mt-0.5 ${keyEntry.active ? "translate-x-4 ml-0.5" : "translate-x-0.5"}`} />
+                    </div>
+                  </button>
+                  <button onClick={() => removeKey(index)} className="p-1.5 rounded-lg hover:bg-destructive/20 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button onClick={() => toggleShowKey(index)} className="p-1.5 rounded-lg hover:bg-secondary/50 transition-colors">
-                  {showKeys.has(index)
-                    ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
-                    : <Eye className="w-3.5 h-3.5 text-muted-foreground" />
-                  }
-                </button>
-                <button onClick={() => toggleKey(index)} className="p-1.5 rounded-lg hover:bg-secondary/50 transition-colors">
-                  <div className={`w-8 h-4 rounded-full transition-colors ${keyEntry.active ? "bg-primary" : "bg-muted"}`}>
-                    <div className={`w-3 h-3 rounded-full bg-foreground transition-transform mt-0.5 ${keyEntry.active ? "translate-x-4 ml-0.5" : "translate-x-0.5"}`} />
+
+              <code className="text-[11px] text-muted-foreground font-mono break-all block mb-2">
+                {showKeys.has(index) ? keyEntry.key : maskKey(keyEntry.key)}
+              </code>
+
+              {/* Per-key stats */}
+              {keyStat && (
+                <div className="flex items-center gap-3 pt-2 border-t border-border/20">
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <BarChart3 className="w-3 h-3" />
+                    <span>{keyStat.requests} req</span>
                   </div>
-                </button>
-                <button onClick={() => removeKey(index)} className="p-1.5 rounded-lg hover:bg-destructive/20 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </button>
-              </div>
-            </div>
-            <code className="text-[11px] text-muted-foreground font-mono break-all">
-              {showKeys.has(index) ? keyEntry.key : maskKey(keyEntry.key)}
-            </code>
-          </motion.div>
-        ))}
+                  <div className={`flex items-center gap-1 text-[10px] ${keyStat.errors > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>{keyStat.errors} err ({errorRate}%)</span>
+                  </div>
+                  {keyStat.lastUsed && (
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>{new Date(keyStat.lastUsed).toLocaleTimeString()}</span>
+                    </div>
+                  )}
+                  {keyStat.lastError && (
+                    <span className="text-[10px] text-destructive ml-auto">{keyStat.lastError}</span>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Add New Key */}
