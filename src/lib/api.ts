@@ -107,6 +107,11 @@ function getAvailableKeys(): { key: string; label: string }[] {
 
 function getNextApiKey(): string {
   const available = getAvailableKeys();
+  // Prefer last working key if still available
+  if (lastWorkingKey) {
+    const found = available.find(k => k.key === lastWorkingKey);
+    if (found) return found.key;
+  }
   if (apiKeyConfig?.rotation_mode === "round_robin") {
     const entry = available[apiKeyIndex % available.length];
     apiKeyIndex = (apiKeyIndex + 1) % available.length;
