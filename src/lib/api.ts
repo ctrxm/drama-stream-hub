@@ -49,6 +49,12 @@ function recordRequest(key: string) {
   if (s) { s.requests++; s.lastUsed = Date.now(); }
 }
 
+function recordSuccess(key: string) {
+  lastWorkingKey = key;
+  const s = keyStats.get(key);
+  if (s) { s.disabled = false; }
+}
+
 function recordError(key: string, status: number) {
   const s = keyStats.get(key);
   if (s) {
