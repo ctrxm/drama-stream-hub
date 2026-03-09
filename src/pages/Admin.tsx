@@ -33,6 +33,7 @@ const tabs = [
   { key: "users", label: "Users" },
   { key: "subscriptions", label: "Subs" },
   { key: "settings", label: "Settings" },
+  { key: "apikeys", label: "API Keys" },
 ] as const;
 
 type TabKey = typeof tabs[number]["key"];
