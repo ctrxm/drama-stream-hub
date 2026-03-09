@@ -9,6 +9,7 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminSubscriptions from "@/components/admin/AdminSubscriptions";
 import AdminSettings from "@/components/admin/AdminSettings";
+import AdminApiKeys from "@/components/admin/AdminApiKeys";
 
 interface Stats {
   total_users: number;
