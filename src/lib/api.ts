@@ -229,8 +229,7 @@ export async function fetchPopularDramas(params?: {
   const cached = getCached<PaginatedResponse<Drama[]>>(cacheKey, CACHE_TTL);
   if (cached) return cached;
 
-  const headers = await getHeaders();
-  const res = await rateLimitedFetch(`${BASE_URL}/api/dramas/popular?${searchParams}`, { headers });
+  const res = await fetchWithFailover(`${BASE_URL}/api/dramas/popular?${searchParams}`);
   const data = await res.json();
   setCache(cacheKey, data);
   return data;
