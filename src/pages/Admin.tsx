@@ -111,6 +111,7 @@ const Admin = () => {
         {activeTab === "users" && <AdminUsers users={users} loading={loadingData} />}
         {activeTab === "subscriptions" && <AdminSubscriptions subs={subs} loading={loadingData} />}
         {activeTab === "settings" && <AdminSettings />}
+        {activeTab === "apikeys" && <AdminApiKeys />}
       </div>
     </div>
   );
