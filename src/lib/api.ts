@@ -22,6 +22,7 @@ export interface ApiKeyStats {
 let apiKeyConfig: ApiKeyConfig | null = null;
 let apiKeyIndex = 0;
 let apiKeyLastFetch = 0;
+let lastWorkingKey: string | null = null;
 const API_KEY_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 const FALLBACK_KEY = "sk_live_f9ee48172e0fbd1dfac36f9f69db9933092cc3c02400bd37";
@@ -46,6 +47,12 @@ function ensureStats(key: string, label: string, active: boolean): ApiKeyStats {
 function recordRequest(key: string) {
   const s = keyStats.get(key);
   if (s) { s.requests++; s.lastUsed = Date.now(); }
+}
+
+function recordSuccess(key: string) {
+  lastWorkingKey = key;
+  const s = keyStats.get(key);
+  if (s) { s.disabled = false; }
 }
 
 function recordError(key: string, status: number) {
@@ -100,6 +107,11 @@ function getAvailableKeys(): { key: string; label: string }[] {
 
 function getNextApiKey(): string {
   const available = getAvailableKeys();
+  // Prefer last working key if still available
+  if (lastWorkingKey) {
+    const found = available.find(k => k.key === lastWorkingKey);
+    if (found) return found.key;
+  }
   if (apiKeyConfig?.rotation_mode === "round_robin") {
     const entry = available[apiKeyIndex % available.length];
     apiKeyIndex = (apiKeyIndex + 1) % available.length;
@@ -168,6 +180,8 @@ async function fetchWithFailover(url: string): Promise<Response> {
       }
       if (!res.ok) {
         recordError(apiKey, res.status);
+      } else {
+        recordSuccess(apiKey);
       }
       return res;
     } catch (err) {
