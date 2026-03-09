@@ -180,6 +180,8 @@ async function fetchWithFailover(url: string): Promise<Response> {
       }
       if (!res.ok) {
         recordError(apiKey, res.status);
+      } else {
+        recordSuccess(apiKey);
       }
       return res;
     } catch (err) {
